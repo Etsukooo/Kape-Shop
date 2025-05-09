@@ -1,6 +1,3 @@
-## Project Overview
-The Coffee Shop Management System is a Django-based web application designed to assist in the management of day-to-day operations in a coffee shop. This application provides features for handling inventory, tracking sales, managing customer information, and generating reports, making it a comprehensive solution for coffee shop owners.
-
 ## Installation
 
 To set up the Coffee Shop Management System, follow these steps:
