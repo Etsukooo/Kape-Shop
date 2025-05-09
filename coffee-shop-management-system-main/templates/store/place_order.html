@@ -1,0 +1,41 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Place Order - {{ product.name }}{% endblock %}
+
+{% block content %}
+<h2>Place Order for {{ product.name }}</h2>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="mb-3">
+        {{ form.quantity.label_tag }} 
+        {{ form.quantity }}
+        {% if form.quantity.errors %}
+            <div class="text-danger">{{ form.quantity.errors }}</div>
+        {% endif %}
+    </div>
+    <p>Price per item: $<span id="price">{{ product.price }}</span></p>
+    <p>Total price: $<span id="total-price">{{ product.price }}</span></p>
+    <button type="submit" class="btn btn-primary">Place Order</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.querySelector('input[name="quantity"]');
+    const price = parseFloat(document.getElementById('price').textContent);
+    const totalPriceElem = document.getElementById('total-price');
+
+    function updateTotalPrice() {
+        let quantity = parseInt(quantityInput.value);
+        if (isNaN(quantity) || quantity < 1) {
+            quantity = 1;
+            quantityInput.value = quantity;
+        }
+        const total = (price * quantity).toFixed(2);
+        totalPriceElem.textContent = total;
+    }
+
+    quantityInput.addEventListener('input', updateTotalPrice);
+    updateTotalPrice();
+});
+</script>
+{% endblock %}
