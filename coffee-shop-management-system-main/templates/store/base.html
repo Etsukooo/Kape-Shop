@@ -1,0 +1,159 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Coffee Shop{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'store/css/custom.css' %}" />
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'home' %}">Coffee Beans</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'about_us' %}">About&nbsp;Us</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'contact_us' %}">Contact&nbsp;Us</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" id="coffeeTypeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Coffee Types
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="coffeeTypeDropdown">
+                        <li><a class="dropdown-item" href="{% url 'product_list' %}?coffee_type=Arabica">Arabica</a></li>
+                        <li><a class="dropdown-item" href="{% url 'product_list' %}?coffee_type=Robusta">Robusta</a></li>
+                        <li><a class="dropdown-item" href="{% url 'product_list' %}?coffee_type=Liberica">Liberica</a></li>
+                        <li><a class="dropdown-item" href="{% url 'product_list' %}?coffee_type=Excelsa">Excelsa</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <form class="d-flex" method="get" action="{% url 'search_products' %}">
+                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="q" value="{{ request.GET.q }}">
+                <button class="btn btn-outline-light" type="submit">Search</button>
+            </form>
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link text-white d-flex align-items-center gap-1" href="{% url 'cart_view' %}">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Cart</span>
+                        <span class="badge bg-danger" id="cart-count">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'profile' %}">Profile</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{% url 'logout' %}">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'login' %}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'register' %}">Register</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateCartCount() {
+        fetch("{% url 'cart_item_count' %}")
+            .then(response => response.json())
+            .then(data => {
+                const cartCountElem = document.getElementById('cart-count');
+                if (cartCountElem) {
+                    cartCountElem.textContent = data.count;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching cart count:', error);
+            });
+    }
+    updateCartCount();
+    setInterval(updateCartCount, 30000);
+});
+</script>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+  <div id="cartToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="cartToastBody">
+        Order successful!
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toastEl = document.getElementById('cartToast');
+    const toast = new bootstrap.Toast(toastEl);
+
+    const forms = document.querySelectorAll('.add-to-cart-form');
+    console.log(`Found ${forms.length} add-to-cart forms.`);
+    forms.forEach(form => {
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        newForm.addEventListener('submit', function(event) {
+            console.log('Add to cart form submitted');
+            event.preventDefault();
+            const url = this.action;
+            const csrftoken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('cartToastBody').textContent = data.message || 'Order successful!';
+                    toast.show();
+
+                    const cartCountElem = document.getElementById('cart-count');
+                    if (cartCountElem) {
+                        cartCountElem.textContent = data.count;
+                    }
+                } else {
+                    console.error('Failed to add to cart:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+            });
+        });
+    });
+});
+</script>
+</body>
+</html>
