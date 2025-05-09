@@ -1,0 +1,67 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Products - Coffee Shop{% endblock %}
+
+{% block content %}
+<h2>Products</h2>
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+            {% else %}
+            <img src="https://via.placeholder.com/300x200?text=No+Image" class="card-img-top" alt="No Image">
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text">{{ product.description|truncatewords:20 }}</p>
+                <p class="card-text fw-bold">${{ product.price }}</p>
+                <div class="d-flex mt-auto gap-2">
+                    <form class="add-to-cart-form" method="post" action="{% url 'add_to_cart' product.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success flex-fill">Add to Cart</button>
+                    </form>
+                    <a href="{% url 'place_order' product.pk %}" class="btn btn-primary flex-fill">Order</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>No products available.</p>
+    {% endfor %}
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.add-to-cart-form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const url = this.action;
+            const csrftoken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Added to Cart!');
+                    const cartCountElem = document.getElementById('cart-count');
+                    if (cartCountElem) {
+                        cartCountElem.textContent = data.count;
+                    }
+                } else {
+                    alert('Failed to add to cart.');
+                }
+            })
+            .catch(error => {
+                alert('Error adding to cart.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
